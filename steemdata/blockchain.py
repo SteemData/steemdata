@@ -1,9 +1,12 @@
+import re
 import time
 from pprint import pprint
 
 import steem as stm
+from funcy import walk_values
 from steem.block import Block
-from steem.utils import parse_time
+from steem.utils import parse_time, keep_in_dict
+from steembase.operations import Amount
 
 
 class Blockchain(object):
@@ -229,8 +232,44 @@ class Blockchain(object):
         return usernames
 
 
+def typify(value):
+    """
+    typify takes a blockchain operation or dict/list/value,
+    and then it parses and converts string types into native data types where appropriate.
+    """
+    if type(value) == dict:
+        return walk_values(typify, value)
+
+    if type(value) in [list, set]:
+        return list(map(typify, value))
+
+    if type(value) == str:
+        if re.match('^\d+\.\d+ (STEEM|SBD|VESTS)$', value):
+            return keep_in_dict(Amount(value).__dict__, ['amount', 'asset'])
+
+        if re.match('^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$', value):
+            return parse_time(value)
+
+    return value
+
+
+def test():
+    foo = {'amount_to_sell': '0.784 SBD',
+           'block_num': 8926306,
+           'expiration': '2017-02-06T10:01:46',
+           'fill_or_kill': False,
+           'min_to_receive': '4.868 STEEM',
+           'proof': {'inputs': [{'foo': {'bar': '4.868 STEEM'}},
+                                3055534,
+                                16227194]}
+           }
+
+    pprint(typify(foo))
+
+
 if __name__ == '__main__':
-    b = Blockchain()
-    for e in b.stream():
-        pprint(e)
-        print()
+    test()
+    # b = Blockchain()
+    # for e in b.stream():
+    #     pprint(e)
+    #     print()
