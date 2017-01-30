@@ -253,23 +253,8 @@ def typify(value):
     return value
 
 
-def test():
-    foo = {'amount_to_sell': '0.784 SBD',
-           'block_num': 8926306,
-           'expiration': '2017-02-06T10:01:46',
-           'fill_or_kill': False,
-           'min_to_receive': '4.868 STEEM',
-           'proof': {'inputs': [{'foo': {'bar': '4.868 STEEM'}},
-                                3055534,
-                                16227194]}
-           }
-
-    pprint(typify(foo))
-
-
 if __name__ == '__main__':
-    test()
-    # b = Blockchain()
-    # for e in b.stream():
-    #     pprint(e)
-    #     print()
+    b = Blockchain()
+    for e in b.stream():
+        pprint(e)
+        print()
