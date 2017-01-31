@@ -179,7 +179,6 @@ class Blockchain(object):
             filter_by=filter_by,
             start=start_block,
             stop=end_block,
-            mode=self.mode,
             **kwargs
         )
 
