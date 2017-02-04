@@ -2,13 +2,16 @@ import sys
 from codecs import open
 from os import path
 
+from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
 assert sys.version_info[0] == 3, "steemdata requires Python > 3"
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
+
+requirements = parse_requirements('./requirements.txt', session=False)
 
 setup(
     name='steemdata',
@@ -37,13 +40,12 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'steem==0.4.1',
         'python-dateutil',
         'requests',
         'grequests',
         'funcy',
         'werkzeug',
-    ],
+    ] + [str(requirement.req) for requirement in requirements],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
