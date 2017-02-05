@@ -1,6 +1,9 @@
+from contextlib import suppress
+
 import steem as stm
 from funcy import rest, first
 from steem.account import Account
+from steem.exceptions import PostDoesNotExist
 from steem.post import Post
 from steem.utils import is_comment
 
@@ -62,8 +65,13 @@ class Blog:
         while not self.history:
             self.refresh()
 
-        # consume an item from history
-        next_item = first(self.history)
-        self.history = list(rest(self.history))
+        while self.history:
+            # consume an item from history
+            next_item = first(self.history)
+            self.history = list(rest(self.history))
 
-        return Post(next_item)
+            # stay in while loop until we find a post that exists
+            with suppress(PostDoesNotExist):
+                p = Post(next_item)
+                p.refresh()
+                return p
