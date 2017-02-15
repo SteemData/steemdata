@@ -144,7 +144,7 @@ class Blockchain(object):
     def stream(self, filter_by=list(), *args, **kwargs):
         """ Yield a stream of blocks
 
-            :param array filter_by: List of operations to filter for, e.g.
+            :param list filter_by: List of operations to filter for, e.g.
                 vote, comment, transfer, transfer_to_vesting,
                 withdraw_vesting, limit_order_create, limit_order_cancel,
                 feed_publish, convert, account_create, account_update,
