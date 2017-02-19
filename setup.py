@@ -8,7 +8,7 @@ here = path.abspath(path.dirname(__file__))
 
 assert sys.version_info[0] == 3, "steemdata requires Python > 3"
 
-VERSION = '0.0.4'
+VERSION = '0.0.5'
 
 setup(
     name='steemdata',
@@ -38,6 +38,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'steem',
+        'pymongo',
         'python-dateutil',
         'requests',
         'grequests',
