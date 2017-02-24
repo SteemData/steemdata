@@ -1,6 +1,7 @@
+import hashlib
+import json
 import re
 import time
-from pprint import pprint
 
 import steem as stm
 from funcy import walk_values
@@ -51,68 +52,16 @@ class Blockchain(object):
         """
         return Block(self.get_current_block_num())
 
-    def blocks(self, start=None, stop=None):
-        """ Yields blocks starting from ``start``.
-
-            :param int start: Starting block
-            :param int stop: Stop at this block
-            :param str mode: We here have the choice between
-                 * "head": the last block
-                 * "irreversible": the block that is confirmed by 2/3 of all block producers and is thus irreversible!
+    def ops(self, full_blocks=False, start=None, stop=None, only_virtual_ops=False):
         """
-        # Let's find out how often blocks are generated!
-        block_interval = self.config().get("STEEMIT_BLOCK_INTERVAL")
+        Yields all operations (including virtual operations) starting from ``start``.
+        This call returns a generator with blocks or operations depending on full_blocks param.
 
-        if not start:
-            start = self.get_current_block_num()
-
-        # We are going to loop indefinitely
-        while True:
-
-            # Get chain properies to identify the
-            head_block = self.get_current_block_num()
-
-            # Blocks from start until head block
-            for blocknum in range(start, head_block + 1):
-                # Get full block
-                block = self.steem.rpc.get_block(blocknum)
-                block.update({"block_num": blocknum})
-                yield block
-
-            # Set new start
-            start = head_block + 1
-
-            if stop and start > stop:
-                break
-
-            # Sleep for one block
-            time.sleep(block_interval)
-
-    def ops(self, start=None, stop=None, only_virtual_ops=False):
-        """ Yields all operations (including virtual operations) starting from ``start``.
-
+            :param bool full_blocks: If true, will return a list of all operations in block
+             rather than yielding each operation separately.
             :param int start: Starting block
             :param int stop: Stop at this block
-            :param str mode: We here have the choice between
-                 * "head": the last block
-                 * "irreversible": the block that is confirmed by 2/3 of all block producers and is thus irreversible!
             :param bool only_virtual_ops: Only yield virtual operations
-
-            This call returns a list with elements that look like
-            this and carries only one operation each:::
-
-                {'block': 8411453,
-                 'op': ['vote',
-                        {'author': 'dana-edwards',
-                         'permlink': 'church-encoding-numbers-defined-as-functions',
-                         'voter': 'juanmiguelsalas',
-                         'weight': 6000}],
-                 'op_in_trx': 0,
-                 'timestamp': '2017-01-12T12:26:03',
-                 'trx_id': 'e897886e8b7560f37da31eb1a42177c6f236c985',
-                 'trx_in_block': 1,
-                 'virtual_op': 0}
-
         """
 
         # Let's find out how often blocks are generated!
@@ -121,24 +70,20 @@ class Blockchain(object):
         if not start:
             start = self.get_current_block_num()
 
-        # We are going to loop indefinitely
         while True:
-
-            # Get chain properies to identify the
             head_block = self.get_current_block_num()
 
-            # Blocks from start until head block
             for block_num in range(start, head_block + 1):
-                # Get full block
-                yield from self.steem.rpc.get_ops_in_block(block_num, only_virtual_ops)
+                if stop and block_num > stop:
+                    raise StopIteration("Reached stop block at: #%s" % stop)
 
-            # Set new start
+                if full_blocks:
+                    yield self.steem.rpc.get_ops_in_block(block_num, only_virtual_ops)
+                else:
+                    yield from self.steem.rpc.get_ops_in_block(block_num, only_virtual_ops)
+
+            # next round
             start = head_block + 1
-
-            if stop and start > stop:
-                break
-
-            # Sleep for one block
             time.sleep(block_interval)
 
     def stream(self, filter_by=list(), *args, **kwargs):
@@ -152,28 +97,31 @@ class Blockchain(object):
                 pow, custom, report_over_production, fill_convert_request,
                 comment_reward, curate_reward, liquidity_reward, interest,
                 fill_vesting_withdraw, fill_order,
-            :param int start: Start at this block
-            :param int stop: Stop at this block
-            :param str mode: We here have the choice between
-                 * "head": the last block
-                 * "irreversible": the block that is confirmed by 2/3 of all block producers and is thus irreversible!
         """
         if isinstance(filter_by, str):
             filter_by = [filter_by]
 
-        for event in self.ops(*args, **kwargs):
-            op_type, op = event['op']
-            if not filter_by or op_type in filter_by:
-                yield {
-                    **op,
-                    "type": op_type,
-                    "timestamp": parse_time(event.get("timestamp")),
-                    "block_num": event.get("block"),
-                    "trx_id": event.get("trx_id"),
-                }
+        for ops in self.ops(*args, **kwargs):
+
+            # deal with full_blocks optionality
+            events = ops
+            if type(ops) == dict:
+                events = [ops]
+
+            for event in events:
+                op_type, op = event['op']
+                if not filter_by or op_type in filter_by:
+                    yield {
+                        "_id": self.hash_op(event),
+                        **op,
+                        "type": op_type,
+                        "timestamp": parse_time(event.get("timestamp")),
+                        "block_num": event.get("block"),
+                        "trx_id": event.get("trx_id"),
+                    }
 
     def replay(self, start_block=1, end_block=None, filter_by=list(), **kwargs):
-        """ Same as ``stream`` with different prototyp
+        """ Same as ``stream`` with different prototype
         """
         return self.stream(
             filter_by=filter_by,
@@ -181,6 +129,14 @@ class Blockchain(object):
             stop=end_block,
             **kwargs
         )
+
+    @staticmethod
+    def hash_op(event):
+        """
+        This method generates a hash of blockchain operation.
+        """
+        data = json.dumps(event, sort_keys=True)
+        return hashlib.sha1(bytes(data, 'utf-8')).hexdigest()
 
     @staticmethod
     def block_time(block_num):
@@ -254,6 +210,8 @@ def typify(value):
 
 if __name__ == '__main__':
     b = Blockchain()
-    for e in b.stream():
-        pprint(e)
-        print()
+    print(len(list(b.stream(start=9563511, stop=9563511))))
+    quit(0)
+    for event in b.stream(start=9563511, full_blocks=True):
+        if event['trx_id'] == '0000000000000000000000000000000000000000':
+            print(event)
