@@ -52,7 +52,7 @@ class Blockchain(object):
         """
         return Block(self.get_current_block_num())
 
-    def ops(self, full_blocks=False, start=None, stop=None, only_virtual_ops=False):
+    def ops(self, start=None, stop=None, full_blocks=False, only_virtual_ops=False):
         """
         Yields all operations (including virtual operations) starting from ``start``.
         This call returns a generator with blocks or operations depending on full_blocks param.
