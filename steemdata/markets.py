@@ -15,7 +15,8 @@ class Tickers(object):
         prices = {}
         urls = [
             "https://api.bitfinex.com/v1/pubticker/BTCUSD",
-            "https://api.exchange.coinbase.com/products/BTC-USD/ticker",
+            # "https://api.coinbase.com/v2/prices/BTC-USD/spot",
+            "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
             "https://www.okcoin.com/api/v1/ticker.do?symbol=btc_usd",
             "https://www.bitstamp.net/api/v2/ticker/btcusd/",
             "https://btc-e.com/api/2/btc_usd/ticker",
@@ -27,9 +28,9 @@ class Tickers(object):
             if "bitfinex" in r.url:
                 data = r.json()
                 prices['bitfinex'] = {'price': float(data['last_price']), 'volume': float(data['volume'])}
-            elif "coinbase" in r.url:
-                data = r.json()
-                prices['coinbase'] = {'price': float(data['price']), 'volume': float(data['volume'])}
+            elif "kraken" in r.url:
+                data = r.json()['result']['XXBTZUSD']['p']
+                prices['kraken'] = {'price': float(data[0]), 'volume': float(data[1])}
             elif "okcoin" in r.url:
                 data = r.json()["ticker"]
                 prices['okcoin'] = {'price': float(data['last']), 'volume': float(data['vol'])}
