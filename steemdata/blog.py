@@ -1,11 +1,11 @@
 from contextlib import suppress
 
 import steem as stm
-from funcy import rest, first
+from funcy.seqs import rest, first
 from steem.account import Account
-from steem.exceptions import PostDoesNotExist
 from steem.post import Post
 from steem.utils import is_comment
+from steembase.exceptions import PostDoesNotExist
 
 
 class Blog:

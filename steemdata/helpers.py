@@ -1,6 +1,7 @@
 import time
 
-from funcy import contextmanager, decorator
+from funcy.decorators import contextmanager
+from funcy.flow import decorator
 from werkzeug.contrib.cache import SimpleCache
 
 

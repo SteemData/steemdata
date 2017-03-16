@@ -4,7 +4,7 @@ import re
 import time
 
 import steem as stm
-from funcy import walk_values
+from funcy.colls import walk_values
 from steem.block import Block
 from steem.utils import parse_time, keep_in_dict
 from steembase.operations import Amount
