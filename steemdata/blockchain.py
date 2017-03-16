@@ -2,30 +2,24 @@ import hashlib
 import json
 import re
 import time
+from typing import Union
 
 import steem as stm
 from funcy.colls import walk_values
+from steem.amount import Amount
 from steem.block import Block
 from steem.utils import parse_time, keep_in_dict
-from steembase.operations import Amount
 
 
 class Blockchain(object):
-    def __init__(
-            self,
-            steem_instance=None,
-            mode="irreversible"
-    ):
-        """ This class allows to access the blockchain and read data
-            from it
+    """ Access the blockchain and read data from it.
 
-            :param Steem steem: Steem() instance to use when accesing a RPC
-            :param str mode: (default) Irreversible block
-                    (``irreversible``) or actual head block (``head``)
-        """
-        if not steem_instance:
-            steem_instance = stm.Steem()
-        self.steem = steem_instance
+    Args:
+        steem_instance (Steemd): Steemd() instance to use when accessing a RPC
+        mode (str): `irreversible` or `head`. `irreversible` is default.
+    """
+    def __init__(self, steem_instance=None, mode="irreversible"):
+        self.steem = steem_instance or stm.Steem()
 
         if mode == "irreversible":
             self.mode = 'last_irreversible_block_num'
@@ -131,20 +125,14 @@ class Blockchain(object):
         )
 
     @staticmethod
-    def hash_op(event):
-        """
-        This method generates a hash of blockchain operation.
-        """
+    def hash_op(event: dict):
+        """ This method generates a hash of blockchain operation. """
         data = json.dumps(event, sort_keys=True)
         return hashlib.sha1(bytes(data, 'utf-8')).hexdigest()
 
     @staticmethod
     def block_time(block_num):
-        """ Returns a datetime of the block with the given block
-            number.
-
-            :param int block_num: Block number
-        """
+        """ Returns a datetime of the block with the given block number. """
         return Block(block_num).time()
 
     @staticmethod
@@ -177,7 +165,7 @@ class Blockchain(object):
             error = timestring_timestamp - guess_block_timestamp
         return int(guess_block)
 
-    def get_all_usernames(self, last_user=-1):
+    def get_all_usernames(self, last_user=''):
         usernames = self.steem.lookup_accounts(last_user, 1000)
         batch = []
         while len(batch) != 1:
@@ -187,9 +175,10 @@ class Blockchain(object):
         return usernames
 
 
-def typify(value):
-    """
-    typify takes a blockchain operation or dict/list/value,
+def typify(value: Union[dict, list, set, str]):
+    """ Enhance block operation with native types.
+
+    Typify takes a blockchain operation or dict/list/value,
     and then it parses and converts string types into native data types where appropriate.
     """
     if type(value) == dict:
