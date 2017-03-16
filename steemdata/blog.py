@@ -9,10 +9,14 @@ from steembase.exceptions import PostDoesNotExist
 
 
 class Blog:
-    def __init__(self, account_name, steem_instance=None):
-        if not steem_instance:
-            steem_instance = stm.Steem()
-        self.steem = steem_instance
+    """ Obtain a list of blog posts of an account
+
+        :param str account_name: Name of the account
+        :param Steemd steemd_instance: Steemd() instance to use when accessing a RPC
+
+    """
+    def __init__(self, account_name, steemd_instance=None):
+        self.steem = steemd_instance or stm.Steem()
 
         self.account = Account(account_name)
         self.current_index = self.account.virtual_op_count()
@@ -72,6 +76,4 @@ class Blog:
 
             # stay in while loop until we find a post that exists
             with suppress(PostDoesNotExist):
-                p = Post(next_item)
-                p.refresh()
-                return p
+                return Post(next_item)
