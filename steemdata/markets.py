@@ -157,5 +157,5 @@ class Markets(Tickers):
         return self.sbd_btc() * self.btc_usd()
 
     def avg_witness_price(self, take=10):
-        price_history = self.steem.rpc.get_feed_history()['price_history']
+        price_history = self.steem.get_feed_history()['price_history']
         return mean([Amount(x['base']).amount * Amount(x['quote']).amount for x in price_history[-take:]])

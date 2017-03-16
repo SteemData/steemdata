@@ -32,7 +32,7 @@ class Blog:
             limit = 1000 - self.current_index
             self.current_index = 1000
 
-        h = self.steem.rpc.get_account_history(self.account.name, self.current_index, limit)
+        h = self.steem.get_account_history(self.account.name, self.current_index, limit)
         if not h:
             raise StopIteration
 

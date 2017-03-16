@@ -37,10 +37,10 @@ class Blockchain(object):
     def info(self):
         """ This call returns the *dynamic global properties*
         """
-        return self.steem.rpc.get_dynamic_global_properties()
+        return self.steem.get_dynamic_global_properties()
 
     def config(self):
-        return self.steem.rpc.get_config()
+        return self.steem.get_config()
 
     def get_current_block_num(self):
         """ This call returns the current block
@@ -78,9 +78,9 @@ class Blockchain(object):
                     raise StopIteration("Reached stop block at: #%s" % stop)
 
                 if full_blocks:
-                    yield self.steem.rpc.get_ops_in_block(block_num, only_virtual_ops)
+                    yield self.steem.get_ops_in_block(block_num, only_virtual_ops)
                 else:
-                    yield from self.steem.rpc.get_ops_in_block(block_num, only_virtual_ops)
+                    yield from self.steem.get_ops_in_block(block_num, only_virtual_ops)
 
             # next round
             start = head_block + 1
@@ -178,10 +178,10 @@ class Blockchain(object):
         return int(guess_block)
 
     def get_all_usernames(self, last_user=-1):
-        usernames = self.steem.rpc.lookup_accounts(last_user, 1000)
+        usernames = self.steem.lookup_accounts(last_user, 1000)
         batch = []
         while len(batch) != 1:
-            batch = self.steem.rpc.lookup_accounts(usernames[-1], 1000)
+            batch = self.steem.lookup_accounts(usernames[-1], 1000)
             usernames += batch[1:]
 
         return usernames
