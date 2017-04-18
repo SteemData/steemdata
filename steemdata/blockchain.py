@@ -1,178 +1,24 @@
-import hashlib
-import json
 import re
-import time
+import warnings
 from typing import Union
 
-import steem as stm
 from funcy.colls import walk_values
 from steem.amount import Amount
-from steem.block import Block
+from steem.blockchain import Blockchain as SteemBlockchain
 from steem.utils import parse_time, keep_in_dict
 
 
-class Blockchain(object):
+class Blockchain(SteemBlockchain):
     """ Access the blockchain and read data from it.
 
     Args:
         steem_instance (Steemd): Steemd() instance to use when accessing a RPC
         mode (str): `irreversible` or `head`. `irreversible` is default.
     """
+
     def __init__(self, steem_instance=None, mode="irreversible"):
-        self.steem = steem_instance or stm.Steem()
-
-        if mode == "irreversible":
-            self.mode = 'last_irreversible_block_num'
-        elif mode == "head":
-            self.mode = "head_block_number"
-        else:
-            raise ValueError("invalid value for 'mode'!")
-
-    def info(self):
-        """ This call returns the *dynamic global properties*
-        """
-        return self.steem.get_dynamic_global_properties()
-
-    def config(self):
-        return self.steem.get_config()
-
-    def get_current_block_num(self):
-        """ This call returns the current block
-        """
-        return self.info().get(self.mode)
-
-    def get_current_block(self):
-        """ This call returns the current block
-        """
-        return Block(self.get_current_block_num())
-
-    def ops(self, start=None, stop=None, full_blocks=False, only_virtual_ops=False):
-        """
-        Yields all operations (including virtual operations) starting from ``start``.
-        This call returns a generator with blocks or operations depending on full_blocks param.
-
-            :param bool full_blocks: If true, will return a list of all operations in block
-             rather than yielding each operation separately.
-            :param int start: Starting block
-            :param int stop: Stop at this block
-            :param bool only_virtual_ops: Only yield virtual operations
-        """
-
-        # Let's find out how often blocks are generated!
-        block_interval = self.config().get("STEEMIT_BLOCK_INTERVAL")
-
-        if not start:
-            start = self.get_current_block_num()
-
-        while True:
-            head_block = self.get_current_block_num()
-
-            for block_num in range(start, head_block + 1):
-                if stop and block_num > stop:
-                    raise StopIteration("Reached stop block at: #%s" % stop)
-
-                if full_blocks:
-                    yield self.steem.get_ops_in_block(block_num, only_virtual_ops)
-                else:
-                    yield from self.steem.get_ops_in_block(block_num, only_virtual_ops)
-
-            # next round
-            start = head_block + 1
-            time.sleep(block_interval)
-
-    def stream(self, filter_by=list(), *args, **kwargs):
-        """ Yield a stream of blocks
-
-            :param list filter_by: List of operations to filter for, e.g.
-                vote, comment, transfer, transfer_to_vesting,
-                withdraw_vesting, limit_order_create, limit_order_cancel,
-                feed_publish, convert, account_create, account_update,
-                witness_update, account_witness_vote, account_witness_proxy,
-                pow, custom, report_over_production, fill_convert_request,
-                comment_reward, curate_reward, liquidity_reward, interest,
-                fill_vesting_withdraw, fill_order,
-        """
-        if isinstance(filter_by, str):
-            filter_by = [filter_by]
-
-        for ops in self.ops(*args, **kwargs):
-
-            # deal with full_blocks optionality
-            events = ops
-            if type(ops) == dict:
-                events = [ops]
-
-            for event in events:
-                op_type, op = event['op']
-                if not filter_by or op_type in filter_by:
-                    yield {
-                        "_id": self.hash_op(event),
-                        **op,
-                        "type": op_type,
-                        "timestamp": parse_time(event.get("timestamp")),
-                        "block_num": event.get("block"),
-                        "trx_id": event.get("trx_id"),
-                    }
-
-    def replay(self, start_block=1, end_block=None, filter_by=list(), **kwargs):
-        """ Same as ``stream`` with different prototype
-        """
-        return self.stream(
-            filter_by=filter_by,
-            start=start_block,
-            stop=end_block,
-            **kwargs
-        )
-
-    @staticmethod
-    def hash_op(event: dict):
-        """ This method generates a hash of blockchain operation. """
-        data = json.dumps(event, sort_keys=True)
-        return hashlib.sha1(bytes(data, 'utf-8')).hexdigest()
-
-    @staticmethod
-    def block_time(block_num):
-        """ Returns a datetime of the block with the given block number. """
-        return Block(block_num).time()
-
-    @staticmethod
-    def block_timestamp(block_num):
-        """ Returns the timestamp of the block with the given block
-            number.
-
-            :param int block_num: Block number
-        """
-        return int(Block(block_num).time().timestamp())
-
-    def get_block_from_time(self, timestring, error_margin=10):
-        """ Estimate block number from given time
-
-            :param str timestring: String representing time
-            :param int error_margin: Estimate block number within this interval (in seconds)
-
-        """
-        known_block = self.get_current_block()['block_num']
-        known_block_timestamp = self.block_timestamp(known_block)
-        timestring_timestamp = parse_time(timestring).timestamp()
-        delta = known_block_timestamp - timestring_timestamp
-        block_delta = delta / 3
-        guess_block = known_block - block_delta
-        guess_block_timestamp = self.block_timestamp(guess_block)
-        error = timestring_timestamp - guess_block_timestamp
-        while abs(error) > error_margin:
-            guess_block += error / 3
-            guess_block_timestamp = self.block_timestamp(guess_block)
-            error = timestring_timestamp - guess_block_timestamp
-        return int(guess_block)
-
-    def get_all_usernames(self, last_user=''):
-        usernames = self.steem.lookup_accounts(last_user, 1000)
-        batch = []
-        while len(batch) != 1:
-            batch = self.steem.lookup_accounts(usernames[-1], 1000)
-            usernames += batch[1:]
-
-        return usernames
+        warnings.warn('steemdata.Blockchain is deprecated. Use steem.Blockchain instead!')
+        super(Blockchain, self).__init__(steem_instance, mode)
 
 
 def typify(value: Union[dict, list, set, str]):
