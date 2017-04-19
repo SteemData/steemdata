@@ -5,7 +5,7 @@ from typing import Union
 from funcy.colls import walk_values
 from steem.amount import Amount
 from steem.utils import keep_in_dict, parse_time
-from toolz import assoc
+from toolz import update_in
 
 
 def typify(value: Union[dict, list, set, str]):
@@ -33,6 +33,6 @@ def typify(value: Union[dict, list, set, str]):
 def json_expand(json_op):
     """ For custom_json ops. """
     if type(json_op) == dict and 'json' in json_op:
-        return assoc(json_op, 'json', json.loads(json_op['json']))
+        return update_in(json_op, ['json'], json.loads)
 
     return json_op
