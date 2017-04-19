@@ -1,6 +1,6 @@
 import datetime
 
-from steemdata.blockchain import typify
+from steemdata.utils import typify
 
 
 def test_typify():

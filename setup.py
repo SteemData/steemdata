@@ -37,7 +37,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'steem==0.18.1',
+        'steem==0.18.2',
         'pymongo',
         'python-dateutil',
         'requests',
