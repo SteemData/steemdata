@@ -8,7 +8,7 @@ here = path.abspath(path.dirname(__file__))
 
 assert sys.version_info[0] == 3, "steemdata requires Python > 3"
 
-VERSION = '0.18.7'
+VERSION = '0.2'
 
 setup(
     name='steemdata',
@@ -27,15 +27,6 @@ setup(
     ],
     keywords='steem steemit',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-
-    # Alternatively, if you want to distribute just a my_module.py, uncomment
-    # this:
-    #   py_modules=["my_module"],
-
-    # List run-time dependencies here.  These will be installed by pip when
-    # your project is installed. For an analysis of "install_requires" vs pip's
-    # requirements files see:
-    # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'steem',
         'pymongo',

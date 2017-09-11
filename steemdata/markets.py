@@ -20,9 +20,8 @@ class Tickers(object):
             "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
             "https://www.okcoin.com/api/v1/ticker.do?symbol=btc_usd",
             "https://www.bitstamp.net/api/v2/ticker/btcusd/",
-            "https://btc-e.com/api/2/btc_usd/ticker",
         ]
-        responses = list(silent(requests.get)(u, timeout=5) for u in urls)
+        responses = list(silent(requests.get)(u, timeout=30) for u in urls)
 
         for r in [x for x in responses if hasattr(x, "status_code") and x.status_code == 200 and x.json()]:
             if "bitfinex" in r.url:
@@ -48,39 +47,43 @@ class Tickers(object):
             raise RuntimeError("Obtaining BTC/USD prices has failed from all sources.")
 
         # vwap
-        return Tickers._wva([x['price'] for x in prices.values()], [x['volume'] for x in prices.values()])
+        return Tickers._wva(
+            [x['price'] for x in prices.values()],
+            [x['volume'] for x in prices.values()])
 
     @staticmethod
     def steem_btc_ticker():
         prices = {}
         urls = [
             "https://poloniex.com/public?command=returnTicker",
-            "https://bittrex.com/api/v1.1/public/getticker?market=BTC-STEEM",
+            "https://bittrex.com/api/v1.1/public/getmarketsummary?market=BTC-STEEM",
         ]
-        responses = list(silent(requests.get)(u, timeout=5) for u in urls)
+        responses = list(silent(requests.get)(u, timeout=30) for u in urls)
 
         for r in [x for x in responses if hasattr(x, "status_code") and x.status_code == 200 and x.json()]:
             if "poloniex" in r.url:
                 data = r.json()["BTC_STEEM"]
                 prices['poloniex'] = {'price': float(data['last']), 'volume': float(data['baseVolume'])}
             elif "bittrex" in r.url:
-                data = r.json()["result"]
+                data = r.json()["result"][0]
                 price = (data['Bid'] + data['Ask']) / 2
-                prices['bittrex'] = {'price': price, 'volume': 0}
+                prices['bittrex'] = {'price': price, 'volume': data['BaseVolume']}
 
         if len(prices) == 0:
             raise RuntimeError("Obtaining STEEM/BTC prices has failed from all sources.")
 
-        return mean([x['price'] for x in prices.values()])
+        return Tickers._wva(
+            [x['price'] for x in prices.values()],
+            [x['volume'] for x in prices.values()])
 
     @staticmethod
     def sbd_btc_ticker(verbose=False):
         prices = {}
         urls = [
             "https://poloniex.com/public?command=returnTicker",
-            "https://bittrex.com/api/v1.1/public/getticker?market=BTC-SBD",
+            "https://bittrex.com/api/v1.1/public/getmarketsummary?market=BTC-SBD",
         ]
-        responses = list(silent(requests.get)(u, timeout=5) for u in urls)
+        responses = list(silent(requests.get)(u, timeout=30) for u in urls)
 
         for r in [x for x in responses if hasattr(x, "status_code") and x.status_code == 200 and x.json()]:
             if "poloniex" in r.url:
@@ -89,16 +92,18 @@ class Tickers(object):
                     print("Spread on Poloniex is %.2f%%" % Tickers.calc_spread(data['highestBid'], data['lowestAsk']))
                 prices['poloniex'] = {'price': float(data['last']), 'volume': float(data['baseVolume'])}
             elif "bittrex" in r.url:
-                data = r.json()["result"]
+                data = r.json()["result"][0]
                 if verbose:
-                    print("Spread on Bittfex is %.2f%%" % Tickers.calc_spread(data['Bid'] + data['Ask']))
+                    print("Spread on Bittrex is %.2f%%" % Tickers.calc_spread(data['Bid'] + data['Ask']))
                 price = (data['Bid'] + data['Ask']) / 2
-                prices['bittrex'] = {'price': price, 'volume': 0}
+                prices['bittrex'] = {'price': price, 'volume': data['BaseVolume']}
 
         if len(prices) == 0:
             raise RuntimeError("Obtaining SBD/BTC prices has failed from all sources.")
 
-        return mean([x['price'] for x in prices.values()])
+        return Tickers._wva(
+            [x['price'] for x in prices.values()],
+            [x['volume'] for x in prices.values()])
 
     @staticmethod
     def calc_spread(bid, ask):
